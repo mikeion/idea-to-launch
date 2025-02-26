@@ -38,7 +38,9 @@ The Life Calendar Visualization tool allows users to create a visual representat
 - **Authentication**: Clerk
 - **Hosting**: GitHub Pages initially, then Railway
 - **Print Service**: Integration with print-on-demand service
-	- 
+	- What will we use here??
+
+
 
 ## Current Status
 
@@ -47,6 +49,7 @@ Jason has already created a basic prototype with:
 - Basic visualization of life calendar
 - Hover information display
 - Seasonal division of time periods
+	- TO DO: Get link to this?
 
 ## Next Steps
 
