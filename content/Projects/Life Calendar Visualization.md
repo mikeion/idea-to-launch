@@ -6,7 +6,7 @@ title: Life Calendar Visualization
 status: in-progress
 priority: high
 start-date: 2025-02-26
-target-date: 2025-03-26
+target-date: 2025-04-26
 technologies:
   - JavaScript
   - HTML/CSS
@@ -38,6 +38,7 @@ The Life Calendar Visualization tool allows users to create a visual representat
 - **Authentication**: Clerk
 - **Hosting**: GitHub Pages initially, then Railway
 - **Print Service**: Integration with print-on-demand service
+	- 
 
 ## Current Status
 
