@@ -1,18 +1,31 @@
-# Quartz v4
+# Idea to Launch
 
-> “[One] who works with the door open gets all kinds of interruptions, but [they] also occasionally gets clues as to what the world is and what might be important.” — Richard Hamming
+A collaborative project space for Michael and Jason to brainstorm, develop, and launch project ideas. This repository uses [Quartz](https://quartz.jzhao.xyz/) as a foundation for publishing our notes and knowledge base.
 
-Quartz is a set of tools that helps you publish your [digital garden](https://jzhao.xyz/posts/networked-thought) and notes as a website for free.
-Quartz v4 features a from-the-ground rewrite focusing on end-user extensibility and ease-of-use.
+## Current Projects
 
-🔗 Read the documentation and get started: https://quartz.jzhao.xyz/
+- **Life Calendar Visualization**: An interactive life calendar that can be customized, filled with memories, and printed as wall art.
 
-[Join the Discord Community](https://discord.gg/cRFFHYye7t)
+## Getting Started
 
-## Sponsors
+This repository is built on Quartz v4. To get started:
 
-<p align="center">
-  <a href="https://github.com/sponsors/jackyzha0">
-    <img src="https://cdn.jsdelivr.net/gh/jackyzha0/jackyzha0/sponsorkit/sponsors.svg" />
-  </a>
-</p>
+1. Clone this repository
+2. Install dependencies: `npm install`
+3. Preview the site locally: `npx quartz build --serve`
+4. Edit content in the `content/` directory
+
+## Obsidian Integration
+
+We use Obsidian to edit and manage our notes:
+
+1. Install [Obsidian](https://obsidian.md/)
+2. Open the `content/` folder as an Obsidian vault
+3. Install recommended plugins (Kanban, Dataview)
+
+## Deploying Changes
+
+To publish changes:
+
+```bash
+npx quartz sync
