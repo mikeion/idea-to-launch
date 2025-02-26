@@ -1,6 +1,25 @@
 ---
-title: Welcome to Quartz
+title: Project Ideas with Jason
 ---
 
-This is a blank Quartz installation.
-See the [documentation](https://quartz.jzhao.xyz) for how to get started.
+# Project Ideas
+
+This is our collaborative space for brainstorming and developing project ideas. We're using Obsidian + Quartz to keep everything organized and accessible.
+
+## Current Projects
+
+- [[Life Calendar Visualization]] - An interactive life calendar that can be customized, filled with memories, and printed as wall art
+
+## Project Management
+
+- [[Kanban Board]] - Our current project priorities and status
+- [[Project Parameters]] - Guidelines and constraints for the types of projects we want to build
+
+## Recent Updates
+```dataview
+TABLE WITHOUT ID
+  file.link as "Page",
+  file.mtime as "Last Modified"
+FROM "content/Projects" OR "content/Meetings"
+SORT file.mtime DESC
+LIMIT 5
