@@ -1,6 +1,6 @@
 # Idea to Launch
 
-A collaborative project space for Michael and Jason to brainstorm, develop, and launch project ideas. This repository uses [Quartz](https://quartz.jzhao.xyz/) as a foundation for publishing our notes and knowledge base.
+A collaborative project space for Mike and Jason to brainstorm, develop, and launch project ideas. This repository uses [Quartz](https://quartz.jzhao.xyz/) as a foundation for publishing our notes and knowledge base.
 
 ## Current Projects
 

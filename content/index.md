@@ -17,9 +17,8 @@ This is our collaborative space for brainstorming and developing project ideas. 
 
 ## Recent Updates
 ```dataview
-TABLE WITHOUT ID
-  file.link as "Page",
-  file.mtime as "Last Modified"
-FROM "content/Projects" OR "content/Meetings"
+LIST file.mtime
+WHERE file.name != "index"
 SORT file.mtime DESC
 LIMIT 5
+```

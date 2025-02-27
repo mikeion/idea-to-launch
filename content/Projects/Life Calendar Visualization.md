@@ -69,4 +69,4 @@ Jason has already created a basic prototype with:
 ## Resources
 
 - [Original Prototype](https://github.com/ja-godfrey/life_calendar)
-- [Similar Products](https://example.com)
+- https://github.com/blinpete/life-calendar
