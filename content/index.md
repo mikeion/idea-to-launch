@@ -16,10 +16,13 @@ This is our collaborative space for brainstorming and developing project ideas. 
 - [[Project Parameters]] - Guidelines and constraints for the types of projects we want to build
 
 ## Recent Updates
-```dataview
-LIST file.mtime
-FROM ""
-WHERE file.name != "index"
-SORT file.mtime DESC
-LIMIT 5
-```
+<!-- QueryToSerialize: LIST file.mtime WHERE file.name != "index" SORT file.mtime DESC LIMIT 5 -->
+<!-- SerializedQuery: LIST file.mtime WHERE file.name != "index" SORT file.mtime DESC LIMIT 5 -->
+- [[Life Calendar Visualization]]: 9:08 AM - February 27, 2025
+- [[Project Ideas]]: 8:55 PM - February 26, 2025
+- [[README]]: 11:17 AM - February 26, 2025
+- [[Resources]]: 11:17 AM - February 26, 2025
+- [[meetings]]: 11:16 AM - February 26, 2025
+<!-- SerializedQuery END -->
+
+
