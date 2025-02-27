@@ -1,5 +1,5 @@
 ---
-title: Project Ideas with Jason
+title: Project Ideas - Mike and Jason
 ---
 
 # Project Ideas
@@ -22,7 +22,7 @@ This is our collaborative space for brainstorming and developing project ideas. 
 - [[Project Ideas]]: 8:55 PM - February 26, 2025
 - [[README]]: 11:17 AM - February 26, 2025
 - [[Resources]]: 11:17 AM - February 26, 2025
-- [[meetings]]: 11:16 AM - February 26, 2025
+- [[Project Template]]: 11:15 AM - February 26, 2025
 <!-- SerializedQuery END -->
 
 
