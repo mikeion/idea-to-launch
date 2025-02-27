@@ -18,6 +18,7 @@ This is our collaborative space for brainstorming and developing project ideas. 
 ## Recent Updates
 ```dataview
 LIST file.mtime
+FROM ""
 WHERE file.name != "index"
 SORT file.mtime DESC
 LIMIT 5
