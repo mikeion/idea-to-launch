@@ -9,6 +9,7 @@ A collection of ideas we might develop into full projects.
 ## Web-Based Ideas
 - **Custom Spotify Playlist Cover Generator** - Tool to create beautiful covers for playlists
 - **Recipe Cost Calculator** - Calculate the cost of your favorite recipes based on ingredient prices
+	- **Recipe Website Bullshit Remover** - Chrome extension that reduces recipe websites to just cover image, ingredients, amounts, and (possibly) cost. Option to download streamlined version to pdf.
 
 ## Mobile App Ideas
 - **Habit Tracker with Social Accountability** - Share habits with friends for accountability

@@ -49,7 +49,7 @@ Jason has already created a basic prototype with:
 - Basic visualization of life calendar
 - Hover information display
 - Seasonal division of time periods
-	- TO DO: Get link to this?
+	- #TODO: Get link to this?
 
 ## Next Steps
 
@@ -63,10 +63,10 @@ Jason has already created a basic prototype with:
 
 - Basic functionality free to use
 - Premium features (more customization, additional layouts)
-- Print-on-demand sales of physical calendars
+- Print-on-demand sales of physical calendars (filled in or empty)
 - Custom framing options
 
 ## Resources
 
-- [Original Prototype](https://github.com/username/life-calendar)
+- [Original Prototype](https://github.com/ja-godfrey/life_calendar)
 - [Similar Products](https://example.com)
