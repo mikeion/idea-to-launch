@@ -20,9 +20,9 @@ This is our collaborative space for brainstorming and developing project ideas. 
 <!-- SerializedQuery: LIST file.mtime WHERE file.name != "index" SORT file.mtime DESC LIMIT 5 -->
 - [[Life Calendar Visualization]]: 9:08 AM - February 27, 2025
 - [[Project Ideas]]: 8:55 PM - February 26, 2025
-- [[README]]: 11:17 AM - February 26, 2025
 - [[Resources]]: 11:17 AM - February 26, 2025
 - [[Project Template]]: 11:15 AM - February 26, 2025
+- [[Kanban Board]]: 11:11 AM - February 26, 2025
 <!-- SerializedQuery END -->
 
 
