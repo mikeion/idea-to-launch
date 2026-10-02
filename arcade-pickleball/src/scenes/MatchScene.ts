@@ -1,4 +1,5 @@
 import Phaser from "phaser"
+import { Sfx } from "../audio/Sfx"
 import { CONFIG } from "../config"
 import { isInReach } from "../entities/Paddle"
 import { InputManager } from "../input/InputManager"
@@ -6,6 +7,7 @@ import { drawBall, drawBallShadow, drawCourt, drawNet, drawPlayer } from "../ren
 import { project } from "../render/projection"
 import { PLAYER_CSS, textStyle } from "../render/ui"
 import { Match, type MatchEvent } from "../systems/match"
+import { sideOf } from "../systems/rules"
 import type { Intent, PlayerId } from "../systems/types"
 
 const LABEL_COLORS: Record<string, string> = {
@@ -20,11 +22,12 @@ export class MatchScene extends Phaser.Scene {
   private inp!: InputManager
   private accumulator = 0
   /** Shot presses seen this frame, held until a simulation step consumes them. */
-  private latched: [{ dink: boolean; drive: boolean }, { dink: boolean; drive: boolean }] = [
-    { dink: false, drive: false },
-    { dink: false, drive: false },
-  ]
+  private latched: [ShotPresses, ShotPresses] = [noPresses(), noPresses()]
   private paused = false
+  /** Seconds of freeze-frame left after a smash. */
+  private hitStopLeft = 0
+  private sfx!: Sfx
+  private pressureGfx!: Phaser.GameObjects.Graphics
 
   private shadowGfx!: Phaser.GameObjects.Graphics
   private ballGfx!: Phaser.GameObjects.Graphics
@@ -47,6 +50,9 @@ export class MatchScene extends Phaser.Scene {
     this.inp = new InputManager(this)
     this.accumulator = 0
     this.paused = false
+    this.hitStopLeft = 0
+    this.latched = [noPresses(), noPresses()]
+    this.sfx = new Sfx(this)
 
     drawCourt(this.add.graphics().setDepth(0), CONFIG)
     this.shadowGfx = this.add.graphics().setDepth(1)
@@ -57,9 +63,11 @@ export class MatchScene extends Phaser.Scene {
     const hud = 1000
     this.scoreText = [0, 1].map((p) =>
       this.add
-        .text(24, 18 + p * 40, "", textStyle(30, PLAYER_CSS[p], { fontStyle: "bold" }))
+        .text(24, 14 + p * 40, "", textStyle(30, PLAYER_CSS[p], { fontStyle: "bold" }))
         .setDepth(hud),
     )
+    this.pressureGfx = this.add.graphics().setDepth(hud)
+    this.add.text(PRESSURE_X, 96, "PRESSURE", textStyle(18, "#c9d1d9")).setDepth(hud)
     this.streakText = this.add
       .text(width - 24, 18, "", textStyle(26, "#f2f2ea", { align: "right" }))
       .setOrigin(1, 0)
@@ -114,20 +122,35 @@ export class MatchScene extends Phaser.Scene {
     for (const p of [0, 1] as PlayerId[]) {
       this.latched[p].dink ||= base[p].dink
       this.latched[p].drive ||= base[p].drive
+      this.latched[p].smash ||= base[p].smash
+    }
+
+    const realDt = Math.min(delta, 100) / 1000
+    if (this.hitStopLeft > 0) {
+      this.hitStopLeft -= realDt
+      this.render()
+      return
     }
 
     const dt = 1 / CONFIG.simHz
-    this.accumulator += (Math.min(delta, 100) / 1000) * CONFIG.simSpeed
-    while (this.accumulator >= dt) {
+    this.accumulator += realDt * CONFIG.simSpeed * this.timeScale()
+    while (this.accumulator >= dt && this.hitStopLeft <= 0) {
       const intents = [0, 1].map((p) => ({ ...base[p], ...this.latched[p] })) as [Intent, Intent]
-      this.latched = [
-        { dink: false, drive: false },
-        { dink: false, drive: false },
-      ]
+      this.latched = [noPresses(), noPresses()]
       this.handleEvents(this.match.step(dt, intents))
       this.accumulator -= dt
     }
+    if (this.hitStopLeft > 0) this.accumulator = 0
     this.render()
+  }
+
+  /** Slow motion while a player lines up a smash on a high ball. Presentation only. */
+  private timeScale(): number {
+    const m = this.match
+    const attacker = m.smashOpportunity
+    if (m.phase !== "rally" || attacker === null) return 1
+    const onTheirSide = sideOf(m.ball.y) === attacker
+    return onTheirSide && m.ball.z > CONFIG.smash.slowMoMinHeight ? CONFIG.smash.slowMoScale : 1
   }
 
   private handleEvents(events: MatchEvent[]): void {
@@ -136,6 +159,15 @@ export class MatchScene extends Phaser.Scene {
         case "hit": {
           const pl = this.match.players[e.player]
           const text = e.auto ? "SCRAMBLE" : e.label
+          if (e.shot === "smash") {
+            this.sfx.smash()
+            this.hitStopLeft = CONFIG.smash.hitStop
+            this.cameras.main.shake(CONFIG.smash.shakeDuration * 1000, CONFIG.smash.shakeIntensity)
+          } else if (e.shot === "drive") {
+            this.sfx.drive()
+          } else {
+            this.sfx.dink()
+          }
           this.floatText(
             pl.x,
             pl.y,
@@ -144,14 +176,38 @@ export class MatchScene extends Phaser.Scene {
           )
           break
         }
+        case "serve":
+          this.sfx.dink()
+          break
+        case "bounce":
+          this.sfx.bounce()
+          break
+        case "net":
+          this.sfx.net()
+          break
+        case "smashChance": {
+          const pl = this.match.players[e.player]
+          this.sfx.smashChance()
+          this.floatText(
+            pl.x,
+            pl.y,
+            `SMASH IT!  ${this.inp.prompt(e.player, "smash")}`,
+            "#f4e04d",
+            0.35,
+          )
+          break
+        }
         case "whiff": {
+          this.sfx.whiff()
           const pl = this.match.players[e.player]
           this.floatText(pl.x, pl.y, "whiff", "#b8c0c8")
           break
         }
         case "point": {
           const w = e.result.winner
-          this.showCenter(`${e.result.reason}!\nPoint P${w + 1}`, PLAYER_CSS[w])
+          this.sfx.point()
+          const how = e.ending === "attack" ? "WINNER  ·  " : ""
+          this.showCenter(`${e.result.reason}!\n${how}Point P${w + 1}`, PLAYER_CSS[w])
           break
         }
         case "gameOver":
@@ -163,8 +219,8 @@ export class MatchScene extends Phaser.Scene {
     }
   }
 
-  private floatText(x: number, y: number, msg: string, color: string): void {
-    const p = project(x, y, 2.1, CONFIG)
+  private floatText(x: number, y: number, msg: string, color: string, height = 2.1): void {
+    const p = project(x, y, height, CONFIG)
     p.y = Math.max(p.y, 130) // keep labels for the far player clear of the HUD
     const t = this.add
       .text(p.x, p.y, msg, textStyle(22, color, { fontStyle: "bold" }))
@@ -197,7 +253,11 @@ export class MatchScene extends Phaser.Scene {
     const inp = this.inp
 
     drawBallShadow(this.shadowGfx, m.ball, CONFIG)
-    drawBall(this.ballGfx, m.ball, CONFIG, false)
+    const glow =
+      m.smashOpportunity !== null && m.phase === "rally"
+        ? 0.5 + 0.5 * Math.sin(this.time.now / 70)
+        : 0
+    drawBall(this.ballGfx, m.ball, CONFIG, glow)
     this.ballGfx.setDepth(project(m.ball.x, m.ball.y, 0, CONFIG).y + 0.5)
     for (const p of m.players) {
       const canHit =
@@ -207,12 +267,13 @@ export class MatchScene extends Phaser.Scene {
     }
 
     for (const p of [0, 1] as PlayerId[]) {
-      const serving = m.score.server === p ? "  ● serve" : ""
-      this.scoreText[p].setText(`P${p + 1}  ${m.score.points[p]}${serving}`)
+      const serving = m.score.server === p ? "●" : "  "
+      this.scoreText[p].setText(`${serving} P${p + 1}  ${m.score.points[p]}`)
       this.footerText[p].setText(
-        `P${p + 1}: ${inp.movePrompt(p)} move · ${inp.prompt(p, "dink")} dink · ${inp.prompt(p, "drive")} drive`,
+        `P${p + 1}: ${inp.movePrompt(p)} move · ${inp.prompt(p, "dink")} dink · ${inp.prompt(p, "drive")} drive · ${inp.prompt(p, "smash")} smash`,
       )
     }
+    this.drawPressure()
     this.streakText.setText(
       `Dink rally: ${m.phase === "rally" || m.phase === "pointOver" ? m.rules.dinkStreak : 0}\nBest: ${m.stats.longestDinkStreak}`,
     )
@@ -239,12 +300,12 @@ export class MatchScene extends Phaser.Scene {
           [
             `PLAYER ${m.winner + 1} WINS  ${Math.max(a, b)}–${Math.min(a, b)}`,
             "",
-            `Longest dink rally: ${m.stats.longestDinkStreak}`,
-            `Longest rally: ${m.stats.longestRally} shots`,
+            `Longest dink rally: ${m.stats.longestDinkStreak}    Longest rally: ${m.stats.longestRally} shots`,
+            `Points won by attacks: ${m.stats.endings.attack}    Unforced errors: ${m.stats.endings.unforced}`,
             "",
             `${confirm}: rematch    ${back}: menu`,
             "",
-            "Did waiting for the pop-up feel tense?",
+            "Did the pressure build? Did points end in a satisfying attack?",
           ].join("\n"),
         )
         .setColor(PLAYER_CSS[m.winner])
@@ -258,4 +319,36 @@ export class MatchScene extends Phaser.Scene {
       this.overlayText.setText("")
     }
   }
+
+  private drawPressure(): void {
+    const g = this.pressureGfx
+    g.clear()
+    for (const p of [0, 1] as PlayerId[]) {
+      const v = this.match.pressure[p]
+      const y = 26 + p * 40
+      g.fillStyle(0x000000, 0.5)
+      g.fillRoundedRect(PRESSURE_X, y, PRESSURE_W, 14, 6)
+      if (v > 0) {
+        // Green when calm, through yellow, to red at full pressure.
+        const color = v < 0.5 ? 0x7dd36b : v < 0.8 ? 0xf4c94d : 0xff5a4d
+        g.fillStyle(color)
+        g.fillRoundedRect(PRESSURE_X, y, Math.max(12, PRESSURE_W * v), 14, 6)
+      }
+      g.lineStyle(2, 0xffffff, 0.5)
+      g.strokeRoundedRect(PRESSURE_X, y, PRESSURE_W, 14, 6)
+    }
+  }
+}
+
+const PRESSURE_X = 170
+const PRESSURE_W = 150
+
+interface ShotPresses {
+  dink: boolean
+  drive: boolean
+  smash: boolean
+}
+
+function noPresses(): ShotPresses {
+  return { dink: false, drive: false, smash: false }
 }

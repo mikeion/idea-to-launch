@@ -100,6 +100,7 @@ export class InputManager {
       moveY: my,
       dink: this.pressed(player, "dink"),
       drive: this.pressed(player, "drive"),
+      smash: this.pressed(player, "smash"),
     }
   }
 

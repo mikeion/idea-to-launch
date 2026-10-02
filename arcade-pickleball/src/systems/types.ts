@@ -3,7 +3,7 @@
 
 export type PlayerId = 0 | 1
 
-export type ShotType = "dink" | "drive"
+export type ShotType = "dink" | "drive" | "smash"
 
 export interface Vec3 {
   x: number
@@ -19,9 +19,10 @@ export interface Intent {
   /** True only on the step the button was pressed. */
   dink: boolean
   drive: boolean
+  smash: boolean
 }
 
-export const IDLE_INTENT: Intent = { moveX: 0, moveY: 0, dink: false, drive: false }
+export const IDLE_INTENT: Intent = { moveX: 0, moveY: 0, dink: false, drive: false, smash: false }
 
 export function otherPlayer(id: PlayerId): PlayerId {
   return id === 0 ? 1 : 0

@@ -25,15 +25,17 @@ export class MenuScene extends Phaser.Scene {
     this.add
       .text(width / 2, 170, "ARCADE PICKLEBALL", textStyle(72, "#f4e04d", { fontStyle: "bold" }))
       .setOrigin(0.5)
-    this.add.text(width / 2, 240, "Milestone 1 · the dink prototype", textStyle(28)).setOrigin(0.5)
+    this.add
+      .text(width / 2, 240, "Milestone 2 · pressure and the attack", textStyle(28))
+      .setOrigin(0.5)
     this.add
       .text(
         width / 2,
         330,
         [
-          "Singles, rally scoring to 7, win by 2.",
-          "Volleying from inside the kitchen is a fault.",
-          "Time your swing: a late or early dink floats up, and floaters get attacked.",
+          "Singles, rally scoring to 7, win by 2. No volleys from inside the kitchen.",
+          "Every dink in a row builds pressure and tightens everyone's timing.",
+          "A mistimed dink pops up. When the ball glows, smash it!",
         ].join("\n"),
         textStyle(24, "#f2f2ea", { align: "center", lineSpacing: 8 }),
       )
@@ -67,6 +69,7 @@ export class MenuScene extends Phaser.Scene {
           `Move: ${inp.movePrompt(p)}`,
           `Dink (soft): ${inp.prompt(p, "dink")}`,
           `Drive (hard): ${inp.prompt(p, "drive")}`,
+          `Smash: ${inp.prompt(p, "smash")}`,
         ].join("\n"),
       )
     }

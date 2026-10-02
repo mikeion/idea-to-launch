@@ -3,6 +3,7 @@ import { cloneBall, createBall, holdBall, type Ball } from "../entities/Ball"
 import {
   idealContactTime,
   isInReach,
+  pressureWindowScale,
   speedWindowScale,
   timingLabel,
   timingQuality,
@@ -39,15 +40,27 @@ export type MatchEvent =
       contact: Vec3
     }
   | { type: "whiff"; player: PlayerId }
+  /** A ball popped up high: `player` has a smash opportunity. */
+  | { type: "smashChance"; player: PlayerId }
   | { type: "bounce"; x: number; y: number }
   | { type: "net" }
-  | { type: "point"; result: PointResult; points: [number, number] }
+  | { type: "point"; result: PointResult; points: [number, number]; ending: PointEnding }
   | { type: "gameOver"; winner: PlayerId }
+
+/**
+ * How a point ended, for tuning Milestone 2 ("more attacks than unforced errors"):
+ * - attack: the winner's last shot was a drive or smash, and the opponent couldn't
+ *   return it (missed it, or faulted trying).
+ * - unforced: the loser faulted on a shot that wasn't answering an attack.
+ * - other: everything else (e.g. a dink nobody reached).
+ */
+export type PointEnding = "attack" | "unforced" | "other"
 
 export interface MatchStats {
   rallies: number
   longestRally: number
   longestDinkStreak: number
+  endings: Record<PointEnding, number>
 }
 
 /** How far ahead the paddle looks when judging the ideal contact moment. */
@@ -66,7 +79,18 @@ export class Match {
   time = 0
   lastPoint: PointResult | null = null
   winner: PlayerId | null = null
-  readonly stats: MatchStats = { rallies: 0, longestRally: 0, longestDinkStreak: 0 }
+  readonly stats: MatchStats = {
+    rallies: 0,
+    longestRally: 0,
+    longestDinkStreak: 0,
+    endings: { attack: 0, unforced: 0, other: 0 },
+  }
+  /** Pressure meter per side, 0..1. Dinks in a row fill both; anything else resets them. */
+  readonly pressure: [number, number] = [0, 0]
+  /** The player who has a smash opportunity right now, if any. */
+  smashOpportunity: PlayerId | null = null
+  /** Each player's last shot this rally (null = hasn't hit yet, or the serve). */
+  private lastShot: [ShotType | null, ShotType | null] = [null, null]
 
   private phaseTimer = 0
   private rng: Rng
@@ -143,6 +167,10 @@ export class Match {
     }
     this.rules.startRally(server.id, -serveSignX as 1 | -1)
     this.history = []
+    this.pressure[0] = 0
+    this.pressure[1] = 0
+    this.smashOpportunity = null
+    this.lastShot = [null, null]
     this.holdBallForServe()
     this.phase = "serve"
   }
@@ -198,7 +226,13 @@ export class Match {
 
   /** Buffer shot presses, hit when the ball is in reach, and auto-block a ball about to get past. */
   private handlePaddle(p: Player, intent: Intent, events: MatchEvent[]): void {
-    const pressed: ShotType | null = intent.drive ? "drive" : intent.dink ? "dink" : null
+    const pressed: ShotType | null = intent.smash
+      ? "smash"
+      : intent.drive
+        ? "drive"
+        : intent.dink
+          ? "dink"
+          : null
     if (pressed) p.pendingPress = { shot: pressed, at: this.time }
 
     const canHit = this.rules.canHit(p.id, this.ball.y) && isInReach(p, this.ball, this.cfg)
@@ -236,9 +270,13 @@ export class Match {
     auto: boolean,
     events: MatchEvent[],
   ): void {
-    const ideal = idealContactTime(p, this.contactSamples(p), this.cfg) ?? this.time
+    const sweetSpot =
+      shot === "smash" ? this.cfg.smash.sweetSpotHeight : this.cfg.player.sweetSpotHeight
+    const ideal = idealContactTime(p, this.contactSamples(p), this.cfg, sweetSpot) ?? this.time
     const timingError = pressTime - ideal
-    const windowScale = speedWindowScale(Math.hypot(this.ball.vx, this.ball.vy), this.cfg)
+    const windowScale =
+      speedWindowScale(Math.hypot(this.ball.vx, this.ball.vy), this.cfg) *
+      pressureWindowScale(this.pressure[p.id], this.cfg)
     const quality = auto
       ? this.cfg.timing.autoHitQuality
       : timingQuality(timingError, this.cfg, windowScale)
@@ -255,9 +293,31 @@ export class Match {
     this.launch(plan.velocity)
     p.pendingPress = null
     this.swing(p, shot)
+    this.lastShot[p.id] = shot
     this.stats.longestDinkStreak = Math.max(this.stats.longestDinkStreak, this.rules.dinkStreak)
+    this.updatePressure(shot, auto)
     events.push({ type: "hit", player: p.id, shot, quality, timingError, label, auto, contact })
+
+    this.smashOpportunity = null
+    if (shot !== "smash" && plan.apex >= this.cfg.smash.opportunityApex) {
+      this.smashOpportunity = otherPlayer(p.id)
+      events.push({ type: "smashChance", player: this.smashOpportunity })
+    }
     if (result) this.endPoint(result, events)
+  }
+
+  private updatePressure(shot: ShotType, auto: boolean): void {
+    if (shot !== "dink" || auto) {
+      this.pressure[0] = 0
+      this.pressure[1] = 0
+      return
+    }
+    // DESIGN: both meters fill on every dink (per the plan); the per-player fill rate
+    // is where Milestone 4 characters (e.g. the Dinker) will differ.
+    const { perDink, fillRate } = this.cfg.pressure
+    for (const id of [0, 1] as PlayerId[]) {
+      this.pressure[id] = Math.min(1, this.pressure[id] + perDink * fillRate[id])
+    }
   }
 
   /** Where the ball has been since the last hit plus where it is about to go, on this player's side. */
@@ -286,7 +346,20 @@ export class Match {
     p.swingShot = shot
   }
 
+  private classifyEnding(result: PointResult): PointEnding {
+    const attack = (s: ShotType | null) => s === "drive" || s === "smash"
+    const winnerShot = this.lastShot[result.winner]
+    // The loser never got their paddle on the winner's last shot, or faulted returning it.
+    if (this.rules.lastHitter === result.winner) {
+      return attack(winnerShot) ? "attack" : "other"
+    }
+    return attack(winnerShot) ? "attack" : "unforced"
+  }
+
   private endPoint(result: PointResult, events: MatchEvent[]): void {
+    const ending = this.classifyEnding(result)
+    this.stats.endings[ending]++
+    this.smashOpportunity = null
     this.lastPoint = result
     this.score.pointTo(result.winner)
     this.stats.rallies++
@@ -294,7 +367,7 @@ export class Match {
     this.phase = "pointOver"
     this.phaseTimer = this.cfg.flow.pointOverDelay
     for (const p of this.players) p.pendingPress = null
-    events.push({ type: "point", result, points: [...this.score.points] })
+    events.push({ type: "point", result, points: [...this.score.points], ending })
   }
 
   /** Between points: players can wander, the ball finishes its flight, nothing counts. */

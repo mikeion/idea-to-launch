@@ -32,12 +32,14 @@ export class Bot {
     private timingNoise = 0.03,
     /** Volley-attack balls passing above this height. */
     private attackHeight = 1.05,
+    /** Smash (rather than drive) volleys taken above this height. */
+    private smashHeight = 1.5,
   ) {}
 
   intent(match: Match): Intent {
     const me = match.players[this.id]
     const cfg = match.cfg
-    const out: Intent = { moveX: 0, moveY: 0, dink: false, drive: false }
+    const out: Intent = { moveX: 0, moveY: 0, dink: false, drive: false, smash: false }
     const dt = 1 / cfg.simHz
 
     if (match.phase === "serve") {
@@ -82,10 +84,13 @@ export class Bot {
           }
           // Keep re-planning while the ideal moment is still ahead, then swing at
           // the planned time (ideal plus this shot's timing noise).
-          const ideal = idealContactTime(me, samples, cfg)
+          const sweet =
+            this.plan.shot === "smash" ? cfg.smash.sweetSpotHeight : cfg.player.sweetSpotHeight
+          const ideal = idealContactTime(me, samples, cfg, sweet)
           if (ideal !== null && ideal > match.time) this.plannedSwing = ideal + this.offset
           if (this.plannedSwing !== null && match.time >= this.plannedSwing - dt / 2) {
             out.drive = this.plan.shot === "drive"
+            out.smash = this.plan.shot === "smash"
             out.dink = this.plan.shot === "dink"
             this.offset = gaussian(this.rng) * this.timingNoise
             this.plannedSwing = null
@@ -126,8 +131,10 @@ export class Bot {
           Math.abs(s.y) > cfg.court.kitchenDepth + 0.15 &&
           reachable(s),
       )
-      if (volley)
-        return { goalX: volley.x, goalY: volley.y + me.side * 0.3, shot: "drive", bounces: 0 }
+      if (volley) {
+        const shot: ShotType = volley.z > this.smashHeight ? "smash" : "drive"
+        return { goalX: volley.x, goalY: volley.y + me.side * 0.3, shot, bounces: 0 }
+      }
     }
 
     // Otherwise let it bounce. If it sits up high after the bounce, drive it at the

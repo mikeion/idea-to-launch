@@ -113,7 +113,8 @@ export function drawBall(
   g: Phaser.GameObjects.Graphics,
   ball: Ball,
   cfg: GameConfig,
-  glow: boolean,
+  /** 0 = no glow; up to 1 = full smash-opportunity glow (pass a pulsing value). */
+  glow: number,
 ): void {
   g.clear()
   const ground = project(ball.x, ball.y, 0, cfg)
@@ -123,9 +124,11 @@ export function drawBall(
     g.lineBetween(ground.x, ground.y, p.x, p.y)
   }
   const r = 7 * p.scale
-  if (glow) {
-    g.fillStyle(COLORS.ball, 0.25)
-    g.fillCircle(p.x, p.y, r * 2)
+  if (glow > 0) {
+    g.fillStyle(COLORS.ball, 0.18 + 0.22 * glow)
+    g.fillCircle(p.x, p.y, r * (2 + glow))
+    g.lineStyle(2, COLORS.ball, 0.5 + 0.5 * glow)
+    g.strokeCircle(p.x, p.y, r * (2.6 + glow))
   }
   g.fillStyle(COLORS.ball)
   g.fillCircle(p.x, p.y, r)

@@ -67,7 +67,7 @@ export const CONFIG = {
     /** Incoming balls faster than this (horizontal m/s) shrink the timing window... */
     fastBallSpeed: 7,
     /** ...down to this fraction of it. Fast balls are harder to time: that is what makes a drive an attack. */
-    fastBallMinScale: 0.45,
+    fastBallMinScale: 0.3,
     /** Quality of the automatic "panic block" when a bounced ball is about to get past you. */
     autoHitQuality: 0.15,
     /** Quality thresholds for the on-screen timing label. */
@@ -113,6 +113,44 @@ export const CONFIG = {
       scatter: 0.35,
       aimWidth: 1.0,
     },
+  },
+
+  pressure: {
+    /** Pressure added to both meters by each dink in a row (0..1 scale). */
+    perDink: 0.1,
+    /** Per-player multiplier on how fast their own meter fills (characters will vary this). */
+    fillRate: [1, 1],
+    /** At full pressure, timing windows shrink to (1 - this) of normal. */
+    maxWindowShrink: 0.6,
+  },
+
+  smash: {
+    /** A shot whose apex is at least this high gives the opponent a smash opportunity. */
+    opportunityApex: 2.0,
+    /** Ideal contact height for a smash (overhead), used when judging smash timing. */
+    sweetSpotHeight: 1.8,
+    /** Horizontal speed of a smash (m/s). */
+    speed: 19,
+    /** Shortest flight allowed (so a smash from right at the net isn't instant). */
+    minFlightTime: 0.22,
+    /** A smash slows down (up to this flight time) if that's what it takes to clear the net. */
+    maxFlightTime: 0.55,
+    netClearance: 0.08,
+    /** How far past the net a smash lands. */
+    depth: 3.4,
+    aimWidth: 2.4,
+    /** Landing scatter at quality 0. */
+    scatter: 1.6,
+    /** Smashing a ball below this height: more scatter. Physics (the net) does the rest. */
+    lowContactHeight: 1.4,
+    lowContactScatter: 1.2,
+    /** Presentation: slow motion while the attacker lines up a high ball. */
+    slowMoScale: 0.55,
+    slowMoMinHeight: 1.0,
+    /** Presentation: freeze-frame on smash contact, and screen shake. */
+    hitStop: 0.09,
+    shakeDuration: 0.18,
+    shakeIntensity: 0.012,
   },
 
   flow: {

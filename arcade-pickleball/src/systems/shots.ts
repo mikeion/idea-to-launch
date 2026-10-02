@@ -1,6 +1,6 @@
 import type { GameConfig } from "../config"
 import type { Player } from "../entities/Player"
-import { apexForClearance, solveShot } from "./physics"
+import { apexForClearance, heightAtNet, solveShot, solveTimedShot } from "./physics"
 import type { Rng } from "./rng"
 import type { ShotType, Vec3 } from "./types"
 
@@ -34,6 +34,26 @@ export function planShot(
   let ty: number
   let clearance: number
   let float: number
+
+  if (shot === "smash") {
+    // Hit down hard, aimed by time-to-land rather than apex. Contact too low and the
+    // physics puts it into the net; that is the risk of smashing a ball that wasn't high.
+    const s = cfg.smash
+    const low = clamp((s.lowContactHeight - contact.z) / s.lowContactHeight, 0, 1)
+    const r = miss * s.scatter + low * s.lowContactScatter
+    const sx =
+      clamp(contact.x * 0.3 + aimX * s.aimWidth, -maxX, maxX) + rng.range(-r * 0.6, r * 0.6)
+    const sy = toward * (s.depth + rng.range(-r * 0.5, r))
+    const dist = Math.hypot(sx - contact.x, sy - contact.y)
+    const minNetZ = court.netHeight + s.netClearance
+    let t = Math.max(s.minFlightTime, dist / s.speed)
+    let velocity = solveTimedShot(contact, sx, sy, t, g)
+    while (t < s.maxFlightTime && (heightAtNet(contact, velocity, g) ?? Infinity) < minNetZ) {
+      t += 0.01
+      velocity = solveTimedShot(contact, sx, sy, t, g)
+    }
+    return { target: { x: sx, y: sy }, apex: contact.z, velocity }
+  }
 
   if (shot === "dink") {
     const s = cfg.shots.dink

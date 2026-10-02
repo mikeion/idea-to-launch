@@ -14,8 +14,13 @@ export function isInReach(player: Player, pos: Vec3, cfg: GameConfig): boolean {
 }
 
 /** How far the ball is from the ideal contact point (in front of the body, about waist high). */
-export function sweetSpotDistance(player: Player, pos: Vec3, cfg: GameConfig): number {
-  const dz = (pos.z - cfg.player.sweetSpotHeight) * cfg.player.sweetSpotHeightWeight
+export function sweetSpotDistance(
+  player: Player,
+  pos: Vec3,
+  cfg: GameConfig,
+  sweetSpotHeight = cfg.player.sweetSpotHeight,
+): number {
+  const dz = (pos.z - sweetSpotHeight) * cfg.player.sweetSpotHeightWeight
   return Math.hypot(horizontalDistance(player, pos), dz)
 }
 
@@ -29,6 +34,11 @@ export function timingQuality(timingError: number, cfg: GameConfig, windowScale 
   const err = Math.abs(timingError)
   if (err <= perfectWindow) return 1
   return Math.max(0, 1 - (err - perfectWindow) / (window - perfectWindow))
+}
+
+/** Timing windows shrink as pressure builds. */
+export function pressureWindowScale(pressure: number, cfg: GameConfig): number {
+  return 1 - Math.min(Math.max(pressure, 0), 1) * cfg.pressure.maxWindowShrink
 }
 
 /** Timing windows shrink for fast incoming balls. */
@@ -60,12 +70,13 @@ export function idealContactTime(
   player: Player,
   samples: TimedSample[],
   cfg: GameConfig,
+  sweetSpotHeight = cfg.player.sweetSpotHeight,
 ): number | null {
   let best: number | null = null
   let bestDist = Infinity
   for (const s of samples) {
     if (!isInReach(player, s, cfg)) continue
-    const d = sweetSpotDistance(player, s, cfg)
+    const d = sweetSpotDistance(player, s, cfg, sweetSpotHeight)
     if (d < bestDist) {
       bestDist = d
       best = s.time

@@ -5,7 +5,7 @@ A collaborative project space for Mike and Jason to brainstorm, develop, and lau
 ## Current Projects
 
 - **Life Calendar Visualization**: An interactive life calendar that can be customized, filled with memories, and printed as wall art.
-- **Arcade Pickleball** ([`arcade-pickleball/`](arcade-pickleball/)): An arcade pickleball game built around the dink exchange. Milestone 1 (the dink prototype) is playable with `npm run dev`.
+- **Arcade Pickleball** ([`arcade-pickleball/`](arcade-pickleball/)): An arcade pickleball game built around the dink exchange. Milestones 1–2 (dink prototype, pressure and smashes) are playable with `npm run dev`. Self-contained so it can move to its own repo.
 
 ## Getting Started
 

@@ -96,6 +96,21 @@ export function solveShot(
   return { vx: (tx - from.x) / flightTime, vy: (ty - from.y) / flightTime, vz }
 }
 
+/** Launch velocity that lands the ball at (tx, ty) exactly `flightTime` seconds from now (can hit downward). */
+export function solveTimedShot(
+  from: Vec3,
+  tx: number,
+  ty: number,
+  flightTime: number,
+  gravity: number,
+): { vx: number; vy: number; vz: number } {
+  return {
+    vx: (tx - from.x) / flightTime,
+    vy: (ty - from.y) / flightTime,
+    vz: (-from.z + 0.5 * gravity * flightTime * flightTime) / flightTime,
+  }
+}
+
 /** Height of the ball as it passes over the net line, or null if it never crosses. */
 export function heightAtNet(
   from: Vec3,
