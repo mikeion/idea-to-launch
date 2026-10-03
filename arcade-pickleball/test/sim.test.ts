@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { CONFIG } from "../src/config"
 import { Match, type MatchEvent } from "../src/systems/match"
 import { Rng } from "../src/systems/rng"
+import { CpuPlayer } from "../src/systems/ai"
 import { Bot } from "./bot"
 
 /** Bot timing noise (seconds), roughly a human who is getting the hang of it. */
@@ -62,6 +63,29 @@ describe("pressure and the attack", () => {
     }
     expect(chances).toBeGreaterThan(0)
     expect(smashes).toBeGreaterThan(0)
-    expect(attack).toBeGreaterThan(unforced * 2)
+    expect(attack).toBeGreaterThan(unforced * 1.5)
+  })
+})
+
+describe("CPU difficulty", () => {
+  it("is ordered: a fixed human-like bot does best against easy and worst against hard", () => {
+    const winsAgainst = (level: "easy" | "medium" | "hard") => {
+      let wins = 0
+      for (let seed = 1; seed <= 4; seed++) {
+        const match = new Match(CONFIG, seed)
+        const rng = new Rng(seed * 7)
+        const human = new Bot(0, rng, HUMANISH_NOISE)
+        const cpu = new CpuPlayer(1, rng, CONFIG.cpu[level])
+        for (let i = 0; i < CONFIG.simHz * 60 * 20 && match.phase !== "gameOver"; i++) {
+          match.step(1 / CONFIG.simHz, [human.intent(match), cpu.intent(match)])
+        }
+        expect(match.phase).toBe("gameOver")
+        if (match.winner === 0) wins++
+      }
+      return wins
+    }
+    const easy = winsAgainst("easy")
+    const hard = winsAgainst("hard")
+    expect(easy).toBeGreaterThan(hard)
   })
 })

@@ -2,6 +2,7 @@ import Phaser from "phaser"
 import { CONFIG } from "./config"
 import { COLORS } from "./render/draw"
 import { BootScene } from "./scenes/BootScene"
+import { HowToScene } from "./scenes/HowToScene"
 import { MatchScene } from "./scenes/MatchScene"
 import { MenuScene } from "./scenes/MenuScene"
 
@@ -14,8 +15,10 @@ const game = new Phaser.Game({
   backgroundColor: COLORS.background,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { gamepad: true },
-  fps: { target: 60 },
-  scene: [BootScene, MenuScene, MatchScene],
+  // smoothStep would clamp each frame's delta to 1/60s, slowing the whole game down
+  // whenever the frame rate dips. Scenes use real elapsed time (capped at 100ms) instead.
+  fps: { target: 60, smoothStep: false },
+  scene: [BootScene, MenuScene, MatchScene, HowToScene],
 })
 
 // Handy for poking at the game from the browser console while tuning.

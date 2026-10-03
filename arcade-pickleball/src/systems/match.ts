@@ -56,6 +56,24 @@ export type MatchEvent =
  */
 export type PointEnding = "attack" | "unforced" | "other"
 
+export interface MatchOptions {
+  /** Never end the game (practice mode). */
+  endless?: boolean
+  /** This player serves every point regardless of who won (practice: the ball machine). */
+  fixedServer?: PlayerId
+}
+
+/** What the timing assist needs to show a player when to swing. */
+export interface SwingHint {
+  /** Absolute match time of the ideal contact moment. */
+  ideal: number
+  /** Current perfect window and total window (seconds), after pressure and ball speed. */
+  perfectWindow: number
+  window: number
+  /** True if this would be a smash (the ball popped up for this player). */
+  smash: boolean
+}
+
 export interface MatchStats {
   rallies: number
   longestRally: number
@@ -102,9 +120,10 @@ export class Match {
     readonly cfg: GameConfig = CONFIG,
     seed: number = Date.now(),
     firstServer: PlayerId = 0,
+    readonly options: MatchOptions = {},
   ) {
     this.rng = new Rng(seed)
-    this.score = new Score(cfg, firstServer)
+    this.score = new Score(cfg, options.fixedServer ?? firstServer)
     this.rules = new RallyRules(cfg)
     this.resetForServe()
   }
@@ -131,7 +150,8 @@ export class Match {
         this.stepFree(dt, intents)
         this.phaseTimer -= dt
         if (this.phaseTimer <= 0) {
-          this.winner = this.score.winner()
+          if (this.options.fixedServer !== undefined) this.score.server = this.options.fixedServer
+          this.winner = this.options.endless ? null : this.score.winner()
           if (this.winner !== null) {
             this.phase = "gameOver"
             events.push({ type: "gameOver", winner: this.winner })
@@ -299,7 +319,7 @@ export class Match {
     events.push({ type: "hit", player: p.id, shot, quality, timingError, label, auto, contact })
 
     this.smashOpportunity = null
-    if (shot !== "smash" && plan.apex >= this.cfg.smash.opportunityApex) {
+    if (shot !== "smash" && this.isAttackable(otherPlayer(p.id))) {
       this.smashOpportunity = otherPlayer(p.id)
       events.push({ type: "smashChance", player: this.smashOpportunity })
     }
@@ -321,6 +341,54 @@ export class Match {
   }
 
   /** Where the ball has been since the last hit plus where it is about to go, on this player's side. */
+  /**
+   * When should this player swing at the incoming ball, judged from where they
+   * stand right now? Null if the ball isn't coming to them or they can't reach it
+   * from here (so the hint also teaches positioning).
+   */
+  swingHint(id: PlayerId): SwingHint | null {
+    if (this.phase !== "rally" || this.rules.lastHitter === id || this.rules.lastHitter === null) {
+      return null
+    }
+    const p = this.players[id]
+    const smash = this.smashOpportunity === id
+    const sweet = smash ? this.cfg.smash.sweetSpotHeight : this.cfg.player.sweetSpotHeight
+    const ideal = idealContactTime(p, this.contactSamples(p), this.cfg, sweet)
+    if (ideal === null) return null
+    const scale =
+      speedWindowScale(Math.hypot(this.ball.vx, this.ball.vy), this.cfg) *
+      pressureWindowScale(this.pressure[id], this.cfg)
+    return {
+      ideal,
+      perfectWindow: this.cfg.timing.perfectWindow * scale,
+      window: this.cfg.timing.window * scale,
+      smash,
+    }
+  }
+
+  /**
+   * Can `receiver` legally hit the ball (just launched) while it's high enough to smash?
+   * In the air it must be outside their kitchen; after one bounce it can be anywhere.
+   */
+  private isAttackable(receiver: PlayerId): boolean {
+    const { opportunityHeight } = this.cfg.smash
+    const { reachHeight } = this.cfg.player
+    const kitchen = this.cfg.court.kitchenDepth
+    for (const s of predictPath(this.ball, 3, 1 / 60, this.cfg)) {
+      if (s.bounces >= 2) break
+      if (sideOf(s.y) !== receiver || s.z < opportunityHeight || s.z > reachHeight) continue
+      if (s.bounces === 1 || Math.abs(s.y) > kitchen) return true
+    }
+    return false
+  }
+
+  /** Where the ball will next touch the ground, if it's in flight during a rally. */
+  predictedBounce(): { x: number; y: number } | null {
+    if (this.phase !== "rally" || this.ball.rolling) return null
+    const next = predictPath(this.ball, 3, 1 / 60, this.cfg).find((s) => s.bounces > 0)
+    return next ? { x: next.x, y: next.y } : null
+  }
+
   private contactSamples(p: Player): TimedSample[] {
     const dt = 1 / this.cfg.simHz
     const bouncesLeft = 2 - this.rules.bouncesSinceHit

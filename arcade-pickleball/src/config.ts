@@ -125,8 +125,11 @@ export const CONFIG = {
   },
 
   smash: {
-    /** A shot whose apex is at least this high gives the opponent a smash opportunity. */
-    opportunityApex: 2.0,
+    /**
+     * A shot gives the opponent a smash opportunity if they could legally hit it while
+     * it's at least this high (in the air outside their kitchen, or after the bounce).
+     */
+    opportunityHeight: 1.6,
     /** Ideal contact height for a smash (overhead), used when judging smash timing. */
     sweetSpotHeight: 1.8,
     /** Horizontal speed of a smash (m/s). */
@@ -151,6 +154,51 @@ export const CONFIG = {
     hitStop: 0.09,
     shakeDuration: 0.18,
     shakeIntensity: 0.012,
+  },
+
+  /** CPU opponent presets. See src/systems/ai.ts for what each field does. */
+  cpu: {
+    easy: {
+      reactionTime: 0.3,
+      timingNoise: 0.13,
+      positionError: 0.35,
+      speedScale: 0.75,
+      attackHeight: 1.35,
+      smashHeight: 1.8,
+      aimSkill: 0.15,
+      floaterEvery: 0,
+    },
+    medium: {
+      reactionTime: 0.18,
+      timingNoise: 0.09,
+      positionError: 0.2,
+      speedScale: 0.9,
+      attackHeight: 1.15,
+      smashHeight: 1.6,
+      aimSkill: 0.45,
+      floaterEvery: 0,
+    },
+    hard: {
+      reactionTime: 0.1,
+      timingNoise: 0.055,
+      positionError: 0.1,
+      speedScale: 1,
+      attackHeight: 1.0,
+      smashHeight: 1.45,
+      aimSkill: 0.8,
+      floaterEvery: 0,
+    },
+    /** Practice mode's ball machine: steady, never attacks, feeds a pop-up every few shots. */
+    machine: {
+      reactionTime: 0,
+      timingNoise: 0.015,
+      positionError: 0,
+      speedScale: 1,
+      attackHeight: 99,
+      smashHeight: 99,
+      aimSkill: 0,
+      floaterEvery: 4,
+    },
   },
 
   flow: {

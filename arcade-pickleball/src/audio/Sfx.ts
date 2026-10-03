@@ -8,6 +8,7 @@ export class Sfx {
   private ctx: AudioContext | null
   private master: GainNode | null = null
   private noiseBuffer: AudioBuffer | null = null
+  enabled = true
 
   constructor(scene: Phaser.Scene, volume = 0.5) {
     const sm = scene.sound as Partial<Phaser.Sound.WebAudioSoundManager>
@@ -55,6 +56,11 @@ export class Sfx {
     this.tone(990, 0.18, "triangle", 0.25, undefined, 0.11)
   }
 
+  /** Short UI blip for menus. */
+  menu(): void {
+    this.tone(880, 0.04, "triangle", 0.15)
+  }
+
   whiff(): void {
     this.noise(0.08, 0.12, 900)
   }
@@ -68,7 +74,7 @@ export class Sfx {
     delay = 0,
   ): void {
     const ctx = this.ctx
-    if (!ctx || !this.master || ctx.state !== "running") return
+    if (!this.enabled || !ctx || !this.master || ctx.state !== "running") return
     const t = ctx.currentTime + delay
     const osc = ctx.createOscillator()
     const g = ctx.createGain()
@@ -84,7 +90,8 @@ export class Sfx {
 
   private noise(dur: number, gain: number, cutoff: number): void {
     const ctx = this.ctx
-    if (!ctx || !this.master || !this.noiseBuffer || ctx.state !== "running") return
+    if (!this.enabled || !ctx || !this.master || !this.noiseBuffer || ctx.state !== "running")
+      return
     const t = ctx.currentTime
     const src = ctx.createBufferSource()
     src.buffer = this.noiseBuffer

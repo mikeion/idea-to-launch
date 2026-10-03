@@ -15,16 +15,17 @@ export type Action =
 
 /** Phaser key names (Phaser.Input.Keyboard.KeyCodes) per action, one map per player. */
 export const KEYBOARD: [Record<Action, string[]>, Record<Action, string[]>] = [
+  // Player 1 has two layouts: WASD + Q/E/R, or arrows + Z/X/C (handy when playing the CPU).
   {
-    left: ["A"],
-    right: ["D"],
-    up: ["W"],
-    down: ["S"],
-    dink: ["Q"],
-    drive: ["E"],
-    smash: ["R"],
-    special: ["F"],
-    confirm: ["ENTER", "SPACE", "Q"],
+    left: ["A", "LEFT"],
+    right: ["D", "RIGHT"],
+    up: ["W", "UP"],
+    down: ["S", "DOWN"],
+    dink: ["Q", "Z"],
+    drive: ["E", "X"],
+    smash: ["R", "C"],
+    special: ["F", "V"],
+    confirm: ["ENTER", "SPACE", "Q", "Z"],
     pause: ["ESC"],
     back: ["BACKSPACE"],
   },

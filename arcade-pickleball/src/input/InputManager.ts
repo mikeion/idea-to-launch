@@ -20,6 +20,11 @@ export class InputManager {
     { x: 0, y: 0 },
   ]
   private lastDevice: [Device, Device] = ["keyboard", "keyboard"]
+  /** Stick pushed past halfway, as digital directions, for menu navigation. */
+  private stickDirs: [Set<Action>, Set<Action>] = [new Set(), new Set()]
+  private prevStickDirs: [Set<Action>, Set<Action>] = [new Set(), new Set()]
+  /** Which of a player's keyboard layouts they last touched (index into each binding list). */
+  private layout: [number, number] = [0, 0]
 
   constructor(private scene: Phaser.Scene) {
     const kb = scene.input.keyboard!
@@ -42,9 +47,11 @@ export class InputManager {
       const down = new Set<Action>()
       let kbUsed = false
       for (const [action, keys] of this.keys[p]) {
-        if (keys.some((k) => k.isDown)) {
+        const idx = keys.findIndex((k) => k.isDown)
+        if (idx >= 0) {
           down.add(action)
           kbUsed = true
+          if (action !== "confirm" && action !== "pause" && action !== "back") this.layout[p] = idx
         }
       }
 
@@ -72,6 +79,13 @@ export class InputManager {
 
       this.down[p] = down
       this.stick[p] = { x: sx, y: sy }
+      this.prevStickDirs[p] = this.stickDirs[p]
+      const dirs = new Set<Action>()
+      if (sx < -0.5) dirs.add("left")
+      if (sx > 0.5) dirs.add("right")
+      if (sy < -0.5) dirs.add("up")
+      if (sy > 0.5) dirs.add("down")
+      this.stickDirs[p] = dirs
     }
   }
 
@@ -86,6 +100,21 @@ export class InputManager {
 
   pressedByAnyone(action: Action): boolean {
     return this.pressed(0, action) || this.pressed(1, action)
+  }
+
+  /** Menu navigation: keys, D-pad or a flick of the stick, from either player. */
+  navPressed(dir: "left" | "right" | "up" | "down"): boolean {
+    return ([0, 1] as PlayerId[]).some(
+      (p) =>
+        this.pressed(p, dir) || (this.stickDirs[p].has(dir) && !this.prevStickDirs[p].has(dir)),
+    )
+  }
+
+  /** Any key or button at all this frame (used for "press anything" prompts). */
+  anyPressed(): boolean {
+    return ([0, 1] as PlayerId[]).some((p) =>
+      [...this.down[p]].some((a) => !this.prevDown[p].has(a)),
+    )
   }
 
   intent(player: PlayerId): Intent {
@@ -111,12 +140,14 @@ export class InputManager {
   /** Button or key label for an action, matching the device the player last used. */
   prompt(player: PlayerId, action: Action): string {
     if (this.lastDevice[player] === "gamepad") return GAMEPAD_GLYPHS[action] ?? action
-    return KEYBOARD[player][action][0] ?? action
+    const keys = KEYBOARD[player][action]
+    return keys[Math.min(this.layout[player], keys.length - 1)] ?? keys[0] ?? action
   }
 
   /** Short label for how the player moves. */
   movePrompt(player: PlayerId): string {
     if (this.lastDevice[player] === "gamepad") return "Stick"
-    return player === 0 ? "WASD" : "IJKL"
+    if (player === 1) return "IJKL"
+    return this.layout[0] === 1 ? "Arrows" : "WASD"
   }
 }
