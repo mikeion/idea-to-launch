@@ -2,7 +2,19 @@
 
 An arcade pickleball game built around the tension of the dink exchange and the sudden attack. See [PLAN.md](PLAN.md) for the full milestone plan.
 
-**Status: Milestones 1 (the dink prototype) and 2 (pressure and the attack) are built and waiting for a human playtest.** After this playtest, the plan calls for the engine decision (keep Phaser or move to Godot/Unity).
+**Status: Milestones 1 (the dink prototype) and 2 (pressure and the attack) are built, plus what a solo playtester needs: a CPU opponent, a practice ball machine, a timing assist and menus.** Waiting for a human playtest. After it, the plan calls for the engine decision (keep Phaser or move to Godot/Unity).
+
+## Modes
+
+- **Play vs CPU** (easy / medium / hard). The CPU predicts the ball with the real physics; its difficulty comes from human-like flaws: reaction delay, timing noise, positioning error, slower movement and how well it aims. Presets are in `config.ts` under `cpu`.
+- **Practice (ball machine)**: steady dinks, with a deliberate pop-up every 4th ball to smash. Tracks your return streak and timing labels. Never ends.
+- **2 Players**: one keyboard (WASD vs IJKL) or two gamepads.
+- **How to play**: four short pages.
+- **Settings** (remembered in the browser): timing assist, two-bounce rule, sound.
+
+The **timing assist** draws a ring that closes in on the ball and turns green at the ideal moment to swing. It only appears when you can reach the ball from where you stand, so it also teaches positioning. A ground marker shows where the ball will land and turns red if it's going out.
+
+A menu demo (CPU vs CPU) plays behind the title screen.
 
 ## Run it
 
@@ -18,10 +30,10 @@ npm run build      # static site in dist/
 
 |              | Player 1 (near, blue)          | Player 2 (far, orange) | Gamepad            |
 | ------------ | ------------------------------ | ---------------------- | ------------------ |
-| Move         | W A S D                        | I J K L                | Left stick / D-pad |
-| Dink (soft)  | Q                              | U                      | Ⓐ                  |
-| Drive (hard) | E                              | O                      | Ⓑ                  |
-| Smash        | R                              | P                      | Ⓧ                  |
+| Move         | W A S D or arrows              | I J K L                | Left stick / D-pad |
+| Dink (soft)  | Q or Z                         | U                      | Ⓐ                  |
+| Drive (hard) | E or X                         | O                      | Ⓑ                  |
+| Smash        | R or C                         | P                      | Ⓧ                  |
 | Pause        | Esc                            |                        | Start              |
 | Quit to menu | Backspace (paused / game over) |                        | Select             |
 
@@ -66,13 +78,14 @@ Every gameplay number is in [`src/config.ts`](src/config.ts). The main levers:
 src/
   main.ts          Phaser game setup (1280x800, scaled to fit)
   config.ts        all tunable numbers
-  scenes/          Boot, Menu, Match (Phaser only: input, rendering, HUD, slow-mo, shake)
+  settings.ts      menu settings (localStorage, optional)
+  scenes/          Boot, Menu (with attract demo), Match (all modes), HowTo
   entities/        Ball, Player, Paddle (reach and timing)
-  systems/         physics, shots, rules, scoring, match flow, pressure (no Phaser imports)
+  systems/         physics, shots, rules, scoring, match flow, pressure, CPU AI (no Phaser imports)
   input/           action bindings and the keyboard/gamepad InputManager
-  render/          court projection and shape drawing
+  render/          court projection, shape drawing, MatchView (incl. timing assist)
   audio/           synthesized sound effects
-test/              vitest: rules, physics, scoring, match, smash, bot simulations
+test/              vitest: rules, physics, scoring, match, smash, modes, bot simulations
 ```
 
 Game logic in `systems/` and `entities/` never imports Phaser, so it carries over if the engine changes.
