@@ -6,7 +6,7 @@ The full, editable roadmap lives in the "Arcade Pickleball Roadmap" doc (private
 
 1. **Playtest (now):** the web prototype, played by the owner and then 5 to 10 outside testers.
    Gate: the dink-then-smash loop is fun.
-2. **3D slice (about 2 to 3 months):** move to Unity (if consoles matter) or Godot 4 (Steam/Steam Deck only).
+2. **3D slice (about 2 to 3 months):** move to Godot 4 (decided: the owner knows it; consoles possible later via a porting partner).
    One court, 2 to 4 characters, toon shading, effects, real audio.
    Gate: it looks great and is still fun.
 3. **Steam early access (6 to 12 months in):** 8+ characters, doubles, more courts, couch play, online with friends.
@@ -21,9 +21,10 @@ vs Medium CPU, then one game with Timing assist off. Report: tense moments, unfa
 whether timing is readable without the ring, whether you could judge ball height, smash feel, CPU fairness,
 and whether you wanted to play again.
 
-## Notes for the engine move
+## Notes for the move to Godot 4
 
-- `src/systems/` and `src/entities/` (physics, rules, pressure, CPU AI) have no Phaser imports; port them as-is
-  and keep `src/config.ts` as the tuning source of truth.
+- `src/systems/` and `src/entities/` (physics, rules, pressure, CPU AI) have no Phaser imports; port them to
+  GDScript (or C#) as-is and keep the tuning numbers in one config resource, like `src/config.ts`.
+- Look: toon shading, outlines and rim light as custom shaders; bloom and color grading from Godot's environment.
 - The simulation is deterministic (fixed 120 Hz step, seeded RNG), which rollback netcode needs. Keep it that way.
 - The bot-vs-bot simulation tests (`test/sim.test.ts`) are the balance regression suite; port them too.
